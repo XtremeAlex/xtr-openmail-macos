@@ -1,5 +1,10 @@
 <a name="readme-top"></a>
 
+[![Contributors][contributors-shield]][contributors-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
+
 <div align="center">
   <h3 align="center">xtr-openmail-macos</h3>
   <p align="center">
@@ -10,6 +15,19 @@
     <a href="https://github.com/XtremeAlex/xtr-openmail-macos/issues">Richiedi una feature</a>
   </p>
 </div>
+
+<details>
+  <summary>Indice</summary>
+  <ol>
+    <li><a href="#info-sul-progetto">Info sul progetto</a></li>
+    <li><a href="#stack-tecnologico">Stack tecnologico</a></li>
+    <li><a href="#architettura">Architettura</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contatti">Contatti</a></li>
+  </ol>
+</details>
 
 ## Info sul progetto
 
@@ -92,3 +110,13 @@ Distribuito sotto licenza Apache 2.0. Vedi [`LICENSE`](LICENSE).
 Andrei Alexandru Dabija — [LinkedIn](https://www.linkedin.com/in/andrei-alexandru-dabija/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/XtremeAlex/xtr-openmail-macos.svg?style=for-the-badge
+[contributors-url]: https://github.com/XtremeAlex/xtr-openmail-macos/graphs/contributors
+[issues-shield]: https://img.shields.io/github/issues/XtremeAlex/xtr-openmail-macos.svg?style=for-the-badge
+[issues-url]: https://github.com/XtremeAlex/xtr-openmail-macos/issues
+[license-shield]: https://img.shields.io/github/license/XtremeAlex/xtr-openmail-macos.svg?style=for-the-badge
+[license-url]: https://github.com/XtremeAlex/xtr-openmail-macos/blob/main/LICENSE
+[linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
+[linkedin-url]: https://www.linkedin.com/in/andrei-alexandru-dabija/
