@@ -1,0 +1,24 @@
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# === Xcode / Swift ===
+.build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.playground/
+Package.resolved
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+
+# === Env / secrets ===
+.env
+.env.*
+!.env.example
