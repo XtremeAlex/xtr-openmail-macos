@@ -1,7 +1,7 @@
 import Foundation
 
 /// Un allegato estratto da un file .msg.
-public struct MsgAttachment: Identifiable, Hashable {
+public struct MsgAttachment: Identifiable, Hashable, Sendable {
     public let id = UUID()
     public let fileName: String
     public let data: Data
@@ -11,7 +11,7 @@ public struct MsgAttachment: Identifiable, Hashable {
 }
 
 /// Rappresentazione di un messaggio Outlook .msg parsato.
-public struct MsgMessage {
+public struct MsgMessage: Sendable {
     public var subject: String
     public var from: String
     public var to: String

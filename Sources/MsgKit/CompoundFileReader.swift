@@ -11,12 +11,16 @@ public struct CompoundFileReader {
         case tooSmall
         case badSignature
         case corrupted(String)
+        case tooLarge(Int64)
 
         public var description: String {
             switch self {
             case .tooSmall: return "File troppo piccolo per essere un Compound File."
             case .badSignature: return "Firma CFB non valida (non e un file .msg valido)."
             case .corrupted(let m): return "File CFB corrotto: \(m)"
+            case .tooLarge(let bytes):
+                let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+                return "File troppo grande (\(size)): il limite e' \(ByteCountFormatter.string(fromByteCount: CompoundFileReader.maxFileSize, countStyle: .file))."
             }
         }
     }
@@ -38,9 +42,17 @@ public struct CompoundFileReader {
     private let miniStreamCutoff: Int
     private var fat: [UInt32] = []
     private var miniFat: [UInt32] = []
+    /// Mini-stream della root letto una sola volta: prima veniva riletto per ogni stream
+    /// piccolo (proprieta', nomi allegati), con costo quadratico sui messaggi grandi.
+    private var miniStream = Data()
     public private(set) var directory: [DirectoryEntry] = []
 
     private static let endOfChain: UInt32 = 0xFFFFFFFE
+
+    /// Limite di dimensione per i file aperti da disco. Perche': il file viene letto tutto in
+    /// memoria e un .msg reale supera raramente qualche decina di MB (Outlook/Exchange
+    /// limitano gli allegati); un file enorme o malevolo non deve poter esaurire la RAM.
+    public static let maxFileSize: Int64 = 256 * 1024 * 1024
     private static let freeSector: UInt32 = 0xFFFFFFFF
 
     public init(data: Data) throws {
@@ -52,19 +64,34 @@ public struct CompoundFileReader {
         }
         self.data = data
 
+        // Valori ammessi da [MS-CFB] 2.2: settori da 512 (v3) o 4096 byte (v4), mini-settori
+        // da 64. Un header alterato con shift arbitrari produrrebbe dimensioni 0 o enormi e
+        // cicli con range invalidi: meglio rifiutare subito il file come corrotto.
         let sectorShift = data.readUInt16(at: 30)
+        guard sectorShift == 9 || sectorShift == 12 else {
+            throw CFBError.corrupted("dimensione settore non valida (shift \(sectorShift))")
+        }
         self.sectorSize = 1 << Int(sectorShift)
         let miniShift = data.readUInt16(at: 32)
+        guard miniShift == 6 else {
+            throw CFBError.corrupted("dimensione mini-settore non valida (shift \(miniShift))")
+        }
         self.miniSectorSize = 1 << Int(miniShift)
         self.miniStreamCutoff = Int(data.readUInt32(at: 56))
 
         try buildFAT()
         try buildDirectory()
         try buildMiniFAT()
+        miniStream = rootMiniStreamData()
     }
 
     public init(url: URL) throws {
-        try self.init(data: try Data(contentsOf: url))
+        let values = try url.resourceValues(forKeys: [.fileSizeKey])
+        if let size = values.fileSize, Int64(size) > Self.maxFileSize {
+            throw CFBError.tooLarge(Int64(size))
+        }
+        // mappedIfSafe: il sistema pagina il file su richiesta invece di copiarlo tutto.
+        try self.init(data: try Data(contentsOf: url, options: .mappedIfSafe))
     }
 
     // MARK: - FAT
@@ -145,7 +172,9 @@ public struct CompoundFileReader {
         let count = raw.count / entrySize
         for i in 0..<count {
             let off = i * entrySize
-            let nameLen = Int(raw.readUInt16(at: off + 64))
+            // Il campo nome e' di 64 byte: un valore maggiore (file alterato) leggerebbe dentro
+            // i campi successivi o oltre il buffer.
+            let nameLen = min(Int(raw.readUInt16(at: off + 64)), 64)
             guard nameLen >= 2 else {
                 directory.append(DirectoryEntry(name: "", type: 0, startSector: 0, size: 0,
                                                 leftSibling: Self.freeSector, rightSibling: Self.freeSector, child: Self.freeSector))
@@ -172,10 +201,14 @@ public struct CompoundFileReader {
 
     /// Legge il contenuto di uno stream a partire dalla sua directory entry.
     public func readStream(_ entry: DirectoryEntry) -> Data {
+        // La dimensione dichiarata e' un UInt64 del file: Int(...) andrebbe in crash oltre
+        // Int.max e Data(capacity:) allocherebbe memoria arbitraria. Nessuno stream puo'
+        // essere piu' grande del file che lo contiene.
+        let size = Int(min(entry.size, UInt64(data.count)))
         if entry.size < UInt64(miniStreamCutoff) && entry.type != 5 {
-            return readMiniStream(startSector: entry.startSector, size: Int(entry.size))
+            return readMiniStream(startSector: entry.startSector, size: size)
         } else {
-            return readNormalStream(startSector: entry.startSector, size: Int(entry.size))
+            return readNormalStream(startSector: entry.startSector, size: size)
         }
     }
 
@@ -199,11 +232,11 @@ public struct CompoundFileReader {
     /// Root storage: il mini-stream e memorizzato nella catena della root entry.
     private func rootMiniStreamData() -> Data {
         guard let root = directory.first(where: { $0.type == 5 }) else { return Data() }
-        return readNormalStream(startSector: root.startSector, size: Int(root.size))
+        return readNormalStream(startSector: root.startSector, size: Int(min(root.size, UInt64(data.count))))
     }
 
     private func readMiniStream(startSector: UInt32, size: Int) -> Data {
-        let mini = rootMiniStreamData()
+        let mini = miniStream
         var out = Data(capacity: size)
         var sector = startSector
         var guardCount = 0

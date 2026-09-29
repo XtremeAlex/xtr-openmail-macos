@@ -40,6 +40,22 @@ lavora solo su file `.msg` gia presenti sul disco. Nessun dato lascia il tuo Mac
 - Elenco ed estrazione degli allegati
 - Export del messaggio in TXT
 - Export in cartella dedicata (mail.txt + tutti gli allegati)
+- Tema "2AD" condiviso con xtr-aeroport-edifact-spring-web: scuro/chiaro/sistema
+  (menu **Aspetto** o Impostazioni ⌘,), accento rosso, etichette mono, pulsante "lampada"
+  durante l'esportazione
+
+### Uso aziendale
+
+- **Export sicuro**: i nomi degli allegati sono controllati dal mittente; vengono ripuliti
+  (niente `../`, percorsi Windows, file nascosti, caratteri di controllo, >255 byte), i file
+  esistenti non sono mai sovrascritti (`nome (2).ext`) e le scritture sono atomiche.
+- **Robustezza**: header CFB con dimensioni di settore non standard rifiutati, dimensioni
+  degli stream limitate a quella del file, limite di 256 MB per file, parsing fuori dal main
+  thread.
+- **Diagnostica**: log unificato di sistema, sottosistema `com.xtremealex.openmail`
+  (`log stream --predicate 'subsystem == "com.xtremealex.openmail"'`); nomi file e percorsi
+  sono marcati privati.
+- **Nessuna rete**: nessuna connessione in uscita, nessuna telemetria.
 
 ## Stack tecnologico
 
@@ -55,11 +71,13 @@ Sources/
 │  ├─ CompoundFileReader.swift lettore CFB/OLE2
 │  ├─ Data+LittleEndian.swift  helper binari
 │  ├─ MsgMessage.swift         modello + parser MAPI
-│  └─ MsgExporter.swift        export TXT / cartella
+│  ├─ MsgExporter.swift        export TXT / cartella (sicuro, atomico)
+│  └─ FileNameSanitizer.swift  nomi file sicuri e univoci
 └─ XtrOpenMail/                app SwiftUI
-   ├─ XtrOpenMailApp.swift
+   ├─ XtrOpenMailApp.swift     scene, menu Aspetto, Impostazioni
    ├─ ContentView.swift
-   └─ MessageViewModel.swift
+   ├─ MessageViewModel.swift   parsing asincrono, log
+   └─ Theme/                   token e componenti del tema 2AD
 Tests/
 └─ MsgKitTests/                test del parser
 ```
