@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Esempio di profilo di configurazione (MDM) per openmail. Adattare UUID e organizzazione. -->
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadIdentifier</key>
+    <string>com.example.openmail.policy</string>
+    <key>PayloadUUID</key>
+    <string>6F1C3A52-2B7E-4B7B-9A1E-000000000001</string>
+    <key>PayloadDisplayName</key>
+    <string>openmail - politica aziendale</string>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.xtremealex.openmail</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.example.openmail.policy.settings</string>
+            <key>PayloadUUID</key>
+            <string>6F1C3A52-2B7E-4B7B-9A1E-000000000002</string>
+            <!-- Limite di dimensione dei .msg (1...1024 MB, default 256) -->
+            <key>MaxFileSizeMB</key>
+            <integer>64</integer>
+            <!-- Impedisce di salvare gli allegati su disco (DLP) -->
+            <key>DisableAttachmentExport</key>
+            <true/>
+            <!-- Impedisce l'export in cartella (mail.txt + allegati) -->
+            <key>DisableFolderExport</key>
+            <false/>
+            <!-- Tema imposto: system, light o dark (i selettori si disattivano) -->
+            <key>theme</key>
+            <string>system</string>
+        </dict>
+    </array>
+</dict>
+</plist>

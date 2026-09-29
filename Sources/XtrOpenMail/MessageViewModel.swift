@@ -22,6 +22,14 @@ final class MessageViewModel: ObservableObject {
     /// Evita che un'apertura lenta sovrascriva il risultato di una successiva.
     private var openGeneration = 0
 
+    /// Politica aziendale (limite dimensione, export consentiti), anche impostata via MDM.
+    let policy: MsgPolicy
+
+    init(policy: MsgPolicy = .current()) {
+        self.policy = policy
+        log.info("Politica: limite \(policy.maxFileSizeMB) MB, allegati \(policy.attachmentExportAllowed ? "si" : "no"), cartella \(policy.folderExportAllowed ? "si" : "no")")
+    }
+
     func open(url: URL) {
         isLoading = true
         errorText = nil
@@ -31,10 +39,11 @@ final class MessageViewModel: ObservableObject {
         log.info("Apertura file \(url.lastPathComponent, privacy: .private)")
 
         // Il parsing gira fuori dal main thread: un .msg con molti allegati non blocca la UI.
+        let maxBytes = policy.maxFileSizeBytes
         Task.detached(priority: .userInitiated) {
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            let result = Result { try MsgParser.parse(url: url) }
+            let result = Result { try MsgParser.parse(url: url, maxFileSize: maxBytes) }
             await MainActor.run { [weak self] in
                 guard let self, generation == self.openGeneration else { return }
                 switch result {
@@ -66,6 +75,10 @@ final class MessageViewModel: ObservableObject {
 
     func exportFolder(to directory: URL) {
         guard let msg = message else { return }
+        guard policy.folderExportAllowed else {
+            errorText = "Export della cartella disattivato dall'amministratore."
+            return
+        }
         let base = (fileName as NSString).deletingPathExtension
         isExporting = true
         errorText = nil
@@ -90,6 +103,10 @@ final class MessageViewModel: ObservableObject {
     }
 
     func saveAttachment(_ att: MsgAttachment, to url: URL) {
+        guard policy.attachmentExportAllowed else {
+            errorText = "Salvataggio degli allegati disattivato dall'amministratore."
+            return
+        }
         do {
             try MsgExporter.saveAttachment(att, to: url)
             noticeText = "Salvato \(url.lastPathComponent)"

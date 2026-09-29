@@ -1,4 +1,5 @@
 import SwiftUI
+import MsgKit
 
 @main
 struct XtrOpenMailApp: App {
@@ -25,6 +26,7 @@ struct XtrOpenMailApp: App {
                     ForEach(AppearancePreference.allCases) { Text($0.label).tag($0.rawValue) }
                 }
                 .pickerStyle(.inline)
+                .disabled(AppearancePreference.isManaged)
             }
         }
 
@@ -53,7 +55,13 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .disabled(AppearancePreference.isManaged)
+                if AppearancePreference.isManaged {
+                    Text("Impostato dall'amministratore (profilo di configurazione).")
+                        .font(.caption).foregroundStyle(Theme.textMuted)
+                }
             }
+            policySummary
             Callout(kind: .info) {
                 MonoLabel("Privacy", color: Theme.info)
                 Text("Nessuna connessione di rete. I log di sistema (sottosistema com.xtremealex.openmail) non contengono nomi file ne' contenuti.")
@@ -63,7 +71,24 @@ struct SettingsView: View {
             }
         }
         .padding(Theme.s5)
-        .frame(width: 420)
+        .frame(width: 460)
         .background(Theme.bg)
     }
 }
+
+private extension SettingsView {
+    /// Riepilogo della politica aziendale in vigore: chi gestisce i Mac verifica a colpo d'occhio
+    /// che il profilo MDM sia stato applicato.
+    var policySummary: some View {
+        let policy = MsgPolicy.current()
+        return VStack(alignment: .leading, spacing: Theme.s2) {
+            MonoLabel("Politica aziendale")
+            HStack(spacing: Theme.s2) {
+                Pill(text: "Limite \(policy.maxFileSizeMB) MB")
+                Pill(text: policy.attachmentExportAllowed ? "Allegati: si" : "Allegati: no")
+                Pill(text: policy.folderExportAllowed ? "Cartella: si" : "Cartella: no")
+            }
+        }
+    }
+}
+

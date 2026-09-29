@@ -41,8 +41,10 @@ lavora solo su file `.msg` gia presenti sul disco. Nessun dato lascia il tuo Mac
 - Export del messaggio in TXT
 - Export in cartella dedicata (mail.txt + tutti gli allegati)
 - Tema "2AD" condiviso con xtr-aeroport-edifact-spring-web: scuro/chiaro/sistema
-  (menu **Aspetto** o Impostazioni ⌘,), accento rosso, etichette mono, pulsante "lampada"
-  durante l'esportazione
+  (pulsante tondo nella barra, menu **Aspetto** o Impostazioni ⌘,), accento rosso, sopratitoli
+  mono, pulsanti 40pt con anello di focus, campi con alone accento e pulsante "lampada"
+  durante l'esportazione (stessa curva 1,4 s dei keyframes `lamp` del web; nessuna animazione
+  con "Riduci movimento")
 
 ### Uso aziendale
 
@@ -55,7 +57,21 @@ lavora solo su file `.msg` gia presenti sul disco. Nessun dato lascia il tuo Mac
 - **Diagnostica**: log unificato di sistema, sottosistema `com.xtremealex.openmail`
   (`log stream --predicate 'subsystem == "com.xtremealex.openmail"'`); nomi file e percorsi
   sono marcati privati.
-- **Nessuna rete**: nessuna connessione in uscita, nessuna telemetria.
+- **Nessuna rete**: nessuna connessione in uscita, nessuna telemetria. Il bundle `.app` e'
+  in sandbox senza entitlement di rete (`packaging/openmail.entitlements`).
+- **Politica via MDM** (profilo di configurazione sul dominio `com.xtremealex.openmail`,
+  esempio in `packaging/com.xtremealex.openmail.mobileconfig.example`):
+
+  | Chiave | Tipo | Effetto |
+  |---|---|---|
+  | `MaxFileSizeMB` | intero 1…1024 (default 256) | file piu' grandi rifiutati prima della lettura |
+  | `DisableAttachmentExport` | bool | nessun salvataggio di allegati su disco (DLP) |
+  | `DisableFolderExport` | bool | niente export in cartella |
+  | `theme` | `system` / `light` / `dark` | tema imposto, i selettori si disattivano |
+
+  Valori non validi ricadono sui default; la politica in vigore e' visibile in Impostazioni (⌘,).
+- **Integrazione Finder**: il bundle dichiara il tipo `.msg` (`CFBundleDocumentTypes`), quindi
+  doppio clic e "Apri con" aprono il messaggio.
 
 ## Stack tecnologico
 
@@ -72,6 +88,7 @@ Sources/
 │  ├─ Data+LittleEndian.swift  helper binari
 │  ├─ MsgMessage.swift         modello + parser MAPI
 │  ├─ MsgExporter.swift        export TXT / cartella (sicuro, atomico)
+│  ├─ MsgPolicy.swift          politica aziendale (MDM), testata
 │  └─ FileNameSanitizer.swift  nomi file sicuri e univoci
 └─ XtrOpenMail/                app SwiftUI
    ├─ XtrOpenMailApp.swift     scene, menu Aspetto, Impostazioni
@@ -79,7 +96,9 @@ Sources/
    ├─ MessageViewModel.swift   parsing asincrono, log
    └─ Theme/                   token e componenti del tema 2AD
 Tests/
-└─ MsgKitTests/                test del parser
+└─ MsgKitTests/                test del parser e della politica
+packaging/                     Info.plist, entitlements, profilo MDM di esempio
+scripts/                       build-app.sh, check-theme-sync.sh
 ```
 
 ## Getting Started
@@ -102,8 +121,22 @@ swift test
 swift run xtr-openmail-macos
 ```
 
-Per un'app con icona/bundle completo aprire il pacchetto in Xcode
-(`File > Open` sulla cartella del progetto) ed eseguire lo schema `xtr-openmail-macos`.
+### Bundle .app, firma e notarizzazione
+
+```bash
+scripts/build-app.sh            # test + release + build/openmail.app (sandbox, hardened runtime) + zip
+scripts/check-theme-sync.sh     # token del tema = app.css della web app, copie identiche fra i progetti
+```
+
+La firma di default e' ad-hoc (uso locale). Per distribuire in azienda:
+
+```bash
+SIGN_IDENTITY="Developer ID Application: Nome (TEAMID)" scripts/build-app.sh
+xcrun notarytool submit build/openmail.zip --keychain-profile PROFILO --wait
+xcrun stapler staple build/openmail.app
+```
+
+La CI (`.github/workflows/ci.yml`) esegue build e test su ogni push.
 
 ## Roadmap
 

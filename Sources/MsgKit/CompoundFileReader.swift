@@ -20,7 +20,7 @@ public struct CompoundFileReader {
             case .corrupted(let m): return "File CFB corrotto: \(m)"
             case .tooLarge(let bytes):
                 let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-                return "File troppo grande (\(size)): il limite e' \(ByteCountFormatter.string(fromByteCount: CompoundFileReader.maxFileSize, countStyle: .file))."
+                return "File troppo grande (\(size)): supera il limite consentito."
             }
         }
     }
@@ -85,9 +85,11 @@ public struct CompoundFileReader {
         miniStream = rootMiniStreamData()
     }
 
-    public init(url: URL) throws {
+    /// - Parameter maxFileSize: limite in byte; in azienda puo' essere ridotto da MDM
+    ///   (vedi `MsgPolicy`), mai alzato oltre `maxFileSize` di default senza saperlo.
+    public init(url: URL, maxFileSize: Int64 = CompoundFileReader.maxFileSize) throws {
         let values = try url.resourceValues(forKeys: [.fileSizeKey])
-        if let size = values.fileSize, Int64(size) > Self.maxFileSize {
+        if let size = values.fileSize, Int64(size) > maxFileSize {
             throw CFBError.tooLarge(Int64(size))
         }
         // mappedIfSafe: il sistema pagina il file su richiesta invece di copiarlo tutto.

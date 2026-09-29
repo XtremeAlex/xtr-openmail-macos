@@ -22,3 +22,6 @@ Package.resolved
 .env
 .env.*
 !.env.example
+
+# === Bundle locale ===
+build/

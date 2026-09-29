@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var showingImporter = false
     @State private var showingTxtExporter = false
     @State private var dropTargeted = false
+    @AppStorage(AppearancePreference.storageKey) private var appearance = AppearancePreference.system.rawValue
 
     var body: some View {
         NavigationSplitView {
@@ -21,6 +22,9 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 BrandMark(name: "openmail")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                ThemeToggleButton(preference: $appearance, disabled: AppearancePreference.isManaged)
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -48,6 +52,10 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openMsgRequested)) { _ in
             showingImporter = true
         }
+        // Doppio clic nel Finder / "Apri con" sul bundle .app (CFBundleDocumentTypes)
+        .onOpenURL { url in
+            if url.isFileURL, url.pathExtension.lowercased() == "msg" { vm.open(url: url) }
+        }
     }
 
     // MARK: - Sidebar (header)
@@ -57,7 +65,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: Theme.s4) {
                 if let msg = vm.message {
                     VStack(alignment: .leading, spacing: Theme.s2) {
-                        MonoLabel("Oggetto", color: Theme.accentText)
+                        Eyebrow("Oggetto")
                         Text(msg.subject.isEmpty ? "(senza oggetto)" : msg.subject)
                             .font(Theme.heading(17))
                             .foregroundStyle(Theme.text)
@@ -115,7 +123,8 @@ struct ContentView: View {
                         } label: { Image(systemName: "square.and.arrow.down") }
                         .buttonStyle(.borderless)
                         .foregroundStyle(Theme.text)
-                        .help("Salva allegato")
+                        .disabled(!vm.policy.attachmentExportAllowed)
+                        .help(vm.policy.attachmentExportAllowed ? "Salva allegato" : "Disattivato dall'amministratore")
                         .accessibilityLabel("Salva \(att.fileName)")
                     }
                     .padding(.vertical, Theme.s2)
@@ -146,7 +155,8 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(XtrButtonStyle(kind: .primary, isLoading: vm.isExporting))
-            .disabled(vm.isExporting)
+            .disabled(vm.isExporting || !vm.policy.folderExportAllowed)
+            .help(vm.policy.folderExportAllowed ? "" : "Disattivato dall'amministratore")
             .accessibilityHint("Crea una cartella con mail.txt e tutti gli allegati")
         }
         .disabled(vm.message == nil)
@@ -201,7 +211,7 @@ struct ContentView: View {
 
     private var emptyState: some View {
         VStack(spacing: Theme.s4) {
-            MonoLabel("Visualizzatore .msg", color: Theme.accentText)
+            Eyebrow("Visualizzatore .msg")
             Text("Apri un file di Outlook")
                 .font(Theme.heading(26))
                 .foregroundStyle(Theme.text)
@@ -215,15 +225,8 @@ struct ContentView: View {
             .buttonStyle(XtrButtonStyle(kind: .primary))
             .padding(.top, Theme.s2)
         }
-        .padding(Theme.s6)
+        .emptyState(targeted: dropTargeted)
         .frame(maxWidth: 560)
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.radiusLarge)
-                .strokeBorder(dropTargeted ? Theme.accent : Theme.border,
-                              style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
-        )
-        .background(dropTargeted ? Theme.accentDim : Color.clear,
-                    in: RoundedRectangle(cornerRadius: Theme.radiusLarge))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .dropDestination(msgType: msgType, targeted: $dropTargeted, open: vm.open(url:))

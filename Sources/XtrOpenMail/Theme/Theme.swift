@@ -32,6 +32,18 @@ enum Theme {
     static let codeText    = Color(dark: 0xD9D9D9, light: 0x1A1A1A)
     /// Warm orange usato dal bagliore del pulsante "lampada" (#ffb347 nel CSS).
     static let lampWarm    = Color(hex: 0xFFB347)
+    /// Alone interno della lampada: `color-mix(in srgb, var(--btn) 70%, #ffb347)`.
+    static let lampGlow    = Color(dark: mix(0xE0241A, 0xFFB347, 0.7), light: mix(0xD70015, 0xFFB347, 0.7))
+
+    // Fogli (schede frammento), header traslucido e ombra dei pannelli sollevati.
+    static let paper       = Color(dark: 0x1D1D1D, light: 0xFFFFFF)
+    static let paperActive = Color(dark: 0x282828, light: 0xFFFFFF)
+    static let paperBack   = Color(dark: 0x151515, light: 0xECECEC)
+    static let headerBg    = Color(darkRGBA: (0x0A0A0A, 0.86), lightRGBA: (0xFFFFFF, 0.88))
+    /// `--shadow: 0 18px 50px rgba(0,0,0,.45 | .14)`.
+    static let shadow      = Color(darkRGBA: (0x000000, 0.45), lightRGBA: (0x000000, 0.14))
+    static let shadowRadius: CGFloat = 25
+    static let shadowY: CGFloat = 18
 
     // MARK: Forme e spaziature (--r-*, --s*)
 
@@ -46,6 +58,11 @@ enum Theme {
     static let s4: CGFloat = 16
     static let s5: CGFloat = 24
     static let s6: CGFloat = 32
+    static let s7: CGFloat = 48
+    static let s8: CGFloat = 72
+
+    /// Altezza della barra superiore (`--header-h`).
+    static let headerHeight: CGFloat = 64
 
     // MARK: Tipografia
     //
@@ -64,6 +81,15 @@ enum Theme {
 
     static func heading(_ size: CGFloat = 20) -> Font {
         .system(size: size, weight: .bold)
+    }
+
+    /// Miscela sRGB di due colori come `color-mix(in srgb, a p, b)`.
+    static func mix(_ a: UInt32, _ b: UInt32, _ p: Double) -> UInt32 {
+        func channel(_ shift: UInt32) -> UInt32 {
+            let ca = Double((a >> shift) & 0xFF), cb = Double((b >> shift) & 0xFF)
+            return UInt32((ca * p + cb * (1 - p)).rounded()) << shift
+        }
+        return channel(16) | channel(8) | channel(0)
     }
 }
 
@@ -86,6 +112,10 @@ enum AppearancePreference: String, CaseIterable, Identifiable {
         case .dark: return "Scuro"
         }
     }
+
+    /// `true` se il tema e' imposto da un profilo di configurazione (MDM): i selettori si
+    /// disattivano invece di offrire una scelta che il sistema ignorerebbe.
+    static var isManaged: Bool { UserDefaults.standard.objectIsForced(forKey: storageKey) }
 
     var colorScheme: ColorScheme? {
         switch self {

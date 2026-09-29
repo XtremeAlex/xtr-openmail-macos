@@ -66,8 +66,8 @@ public enum MsgParser {
         }
     }
 
-    public static func parse(url: URL) throws -> MsgMessage {
-        let reader = try CompoundFileReader(url: url)
+    public static func parse(url: URL, maxFileSize: Int64 = CompoundFileReader.maxFileSize) throws -> MsgMessage {
+        let reader = try CompoundFileReader(url: url, maxFileSize: maxFileSize)
         return parse(reader: reader)
     }
 
