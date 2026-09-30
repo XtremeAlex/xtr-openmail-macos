@@ -39,6 +39,9 @@ lavora solo su file `.msg` gia presenti sul disco. Nessun dato lascia il tuo Mac
 - Visualizzazione di oggetto, mittente, destinatari (To/CC) e corpo
 - Elenco ed estrazione degli allegati
 - Export del messaggio in TXT
+- Export in PDF A4 (⇧⌘P): header, corpo testo ed elenco allegati, titolo del documento =
+  oggetto; generato con CoreText, senza interpretare HTML ne' caricare risorse remote
+  (niente pixel di tracciamento), pagine numerate, limite di 500 pagine
 - Export in cartella dedicata (mail.txt + tutti gli allegati)
 - Tema "2AD" condiviso con xtr-aeroport-edifact-spring-web: scuro/chiaro/sistema
   (pulsante tondo nella barra, menu **Aspetto** o Impostazioni ⌘,), accento rosso, sopratitoli
@@ -144,7 +147,7 @@ La CI (`.github/workflows/ci.yml`) esegue build e test su ogni push.
 - [x] Visualizzazione header + corpo + allegati
 - [x] Export TXT e cartella
 - [ ] Rendering del corpo HTML (`bodyHtml`)
-- [ ] Export in PDF (come la versione Java)
+- [x] Export in PDF (come la versione Java)
 - [ ] Anteprima inline degli allegati immagine
 
 ## License

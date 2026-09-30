@@ -13,6 +13,7 @@ final class MessageViewModel: ObservableObject {
     @Published var noticeText: String?
     @Published var isLoading = false
     @Published var isExporting = false
+    @Published var isExportingPdf = false
 
     /// Log unificato di sistema (Console.app, `log stream --predicate 'subsystem == ...'`).
     /// Perche': in azienda il supporto deve poter diagnosticare senza chiedere il file.
@@ -70,6 +71,26 @@ final class MessageViewModel: ObservableObject {
             noticeText = "Esportato \(url.lastPathComponent)"
         } catch {
             report("Export TXT fallito", error)
+        }
+    }
+
+    /// PDF A4 del messaggio (CoreText, nessun HTML ne' rete): l'impaginazione di un corpo lungo
+    /// puo' richiedere tempo, quindi gira fuori dal main thread; la scrittura e' atomica.
+    func exportPdf(to url: URL) {
+        guard let msg = message else { return }
+        isExportingPdf = true
+        errorText = nil
+        noticeText = nil
+        Task.detached(priority: .userInitiated) {
+            let result = Result { try MsgPdfRenderer.render(msg).write(to: url, options: .atomic) }
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                switch result {
+                case .success: self.noticeText = "Esportato \(url.lastPathComponent)"
+                case .failure(let error): self.report("Export PDF fallito", error)
+                }
+                self.isExportingPdf = false
+            }
         }
     }
 

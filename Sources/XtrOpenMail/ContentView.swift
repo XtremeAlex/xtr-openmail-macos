@@ -149,6 +149,16 @@ struct ContentView: View {
             .keyboardShortcut("e", modifiers: [.command, .shift])
 
             Button {
+                exportPdf()
+            } label: {
+                Label("Esporta PDF", systemImage: "doc.richtext").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(XtrButtonStyle(kind: .ghost, isLoading: vm.isExportingPdf))
+            .disabled(vm.isExportingPdf)
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .accessibilityHint("Salva header, corpo testo ed elenco allegati in un PDF A4 per l'archivio")
+
+            Button {
                 exportFolder()
             } label: {
                 Label(vm.isExporting ? "Esportazione..." : "Esporta cartella", systemImage: "folder")
@@ -254,6 +264,15 @@ struct ContentView: View {
         panel.nameFieldStringValue = FileNameSanitizer.sanitize(att.fileName)
         if panel.runModal() == .OK, let url = panel.url {
             vm.saveAttachment(att, to: url)
+        }
+    }
+
+    private func exportPdf() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.pdf]
+        panel.nameFieldStringValue = FileNameSanitizer.sanitize(exportBaseName + ".pdf", fallback: "mail.pdf")
+        if panel.runModal() == .OK, let url = panel.url {
+            vm.exportPdf(to: url)
         }
     }
 
