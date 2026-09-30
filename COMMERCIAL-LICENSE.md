@@ -20,7 +20,9 @@ accordo esplicito.
 
 Per ottenere una licenza commerciale, contattami:
 
-- Autore: Andrei Alexandru Dabija
+- Autore: Andrei Alexandru Dabija (XtremeAlex)
+- Email: alexdabi92@gmail.com
+- Sito: https://2ad.bubume.it/
 - LinkedIn: https://www.linkedin.com/in/andrei-alexandru-dabija/
 - GitHub: https://github.com/XtremeAlex
 
